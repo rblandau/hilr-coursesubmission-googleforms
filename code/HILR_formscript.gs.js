@@ -1,6 +1,13 @@
 /**
  * HILR FormScript for Curriculum Committee submissions.
- * V04 20150309     RBLandau
+ * V04 	20150309    RBLandau
+ * V04x 20150814    RBLandau
+ *                  Add a little debug info to old version, and update
+ *                   the out-of-date version on the actual form.  
+ * v05	20150814		RBLandau
+ *									New-ish version that almost works.  Still takes too much CPU time.  
+ *                  Next: comment out all the old code that I think is no longer used 
+ *                   and see if it still works.        
  */
 
 /**
@@ -13,6 +20,10 @@
  * presented to users will reflect this limited scope.
  */
 
+// Yes, with no 'var' this is deliberately a global.  
+// To be added to bottom of email.
+sVersionNumber = '04x';
+sVersionDate = '20150814.1301'
 
 /*
 *************************************************************
@@ -42,24 +53,32 @@ function sendEmailAfterSubmit_RBL1(e) {
 
   Logger.log("ENTER sendEmailAfterSubmit e=%s", e);
   var oEventLists = fnoDumpEvent(e);
-  var oItemDict = oEventLists.oItemDict;
+  var oItemDict = oEventLists.oItems;
   var lItemNames = oEventLists.lItemNames;
   
+  //   U P P E R   B O D Y 
+  
   var sUpperBody = "";
-  var sEditURL = returnResponseURL_RBL0(e);
+  //var sEditURL = returnResponseURL_RBL0(e);
+  var sEditURL = oEventLists.sEditURL;
   sUpperBody += 'Editable URL with previous responses (below) filled in:\n' + sEditURL + '\n\n';
   var sTimestampBegin = getCurrentTimestamp_RBL1();
   sUpperBody += 'Begin: ' + sTimestampBegin + '\n\n';
-  var maybeEditURL = returnResponseURL_RBL0(e);
+  var maybeEditURL = sEditURL;
 
   for (var ii=0; ii<lItemNames.length; ii++) {
     var sQuestion = lItemNames[ii];
     var sAnswer = oItemDict[sQuestion];
-    var sLine = 'Q: "' + sQuestion + '" == A: "' + sAnswer + '"\n';
-    sUpperbody += sLine;
+    if (sAnswer != undefined)
+    {
+    	var sLine = 'Q: "' + sQuestion + '" == A: "' + sAnswer + '"\n';
+    	sUpperBody += sLine;
+    }
   }
 
   sUpperBody += "\nEnd: " + getCurrentTimestamp_RBL1() + '\n';
+
+  //   L O W E R   B O D Y 
 
   var sLowerBody = "";
   var sURLList = "URLs for ALL responses, in row order.  Look at SGL and Title.\n\n";
@@ -68,6 +87,7 @@ function sendEmailAfterSubmit_RBL1(e) {
   sLowerBody += "\n" + sURLList; 
   var oForm = FormApp.getActiveForm();
   sLowerBody += '\nBeginning URL to blank form:\n' + oForm.getPublishedUrl() + '\n\n';
+  sLowerBody += 'HILR CC Submision JS Script version ' + sVersionNumber + ' ' +  sVersionDate + '\n';
   sLowerBody += '=======end=======';
 
   // Special version of the body goes to the author; may include debug log.  
@@ -119,23 +139,20 @@ function sendEmailAfterSubmit_RBL1(e) {
   {
     // HILR production version                          // P R O D U C T I O N
     // New subject line
+    var oResp = oEventLists;
     var oMess = oResp.oItems;     // object oMess[questionstring] = answerstring
     // HILR production version
     var sSglName = findItemResponseToKey("SGL 1 Name",oMess);
     var sSglEMail = findItemResponseToKey("SGL 1 eMail",oMess);
-    var nSubmNr = maybeSubmNumber; 
-    var nRowNr = maybeRowNumber;
-    var subject = "Row # {4} (submission {0}); from {1}; email={2}; at {3}".format( 
-                   nSubmNr 
-                 , sSglName
+    var subject = "Submission from {0}; email={1}; at {2}".format( 
+                   sSglName
                  , sSglEMail
                  , sTimestampBegin
-                 , nRowNr
                );
     // Get the email addresses of people who care.  
     var email_user = Session.getActiveUser().getEmail();
     var email2 = "hilr-cc-submissions@googlegroups.com";
-    var email3 = "theatrewonk@gmail.com";
+    var email3 = "dickr@mac.com";
     var email4 = "receiver6_form@ricksoft.com";
     // For production, use only email2 and email3.  Comment out the others.  
     // Send an email with contents and a link to edit form with.
@@ -149,6 +166,8 @@ function sendEmailAfterSubmit_RBL1(e) {
 
 
 ////////////////// OLD //////////////////
+if (0)
+{
 
   // Build up the email body from various parts.
   var sTimestampBegin = getCurrentTimestamp_RBL1();
@@ -187,6 +206,8 @@ function sendEmailAfterSubmit_RBL1(e) {
   body += sMessage;
   body += "End: " + getCurrentTimestamp_RBL1() + '\n';
 
+//   A L L   U R L S 
+
   // Add list of all URLs, which came from searching for the row.
   var asAllURLs = oRow.asAllURLs;
   var sURLList = "URLs for ALL responses, in row order.  Look at SGL and Title.\n\n";
@@ -195,6 +216,10 @@ function sendEmailAfterSubmit_RBL1(e) {
   var form = FormApp.getActiveForm();
   body += '\nBeginning URL to blank form:\n' + form.getPublishedUrl() + '\n\n';
   body += '=======end=======';
+
+}//END if 0
+
+//   A P P E N D   L O G   F O R   D E B U G 
 
   // Special version of the body goes to the author; may include debug log.  
   // Optional because the log can be reeeaaallly looong, 1000s of lines.
@@ -205,6 +230,9 @@ function sendEmailAfterSubmit_RBL1(e) {
     body2 = body + '\n\nDebug log data follows.  Please ignore from here to end.\n\n';
     body2 += sLogData;
   }
+
+
+//   F O R M   A N D   S E N D   E M A I L 
 
   // Different email destinations depending on production vs test.
   if (! bProductionVersion)         // <=========== TEST VS PRODUCTION =============
@@ -273,6 +301,72 @@ function returnResponseURL_RBL0(e) {
   var maybeEditableURL = eResp.getEditResponseUrl();
   return maybeEditableURL;
 }
+
+//-------------------------------------------------
+// f n l G e t A l l U r l s 
+//-------------------------------------------------
+function fnlGetAllUrls() {
+	/**
+	Returns a string array of formatted URLs, in order from the sheet: 
+	 asAllUrls
+	*/
+  Logger.log("ENTER fnlGetAllUrls ");
+
+  var form = FormApp.getActiveForm();
+  var formResponses = form.getResponses();
+  var formResponsesLength = parseInt(formResponses.length);
+  Logger.log("fnlGetAllUrls1 ROWN formResponses.length=%s", formResponsesLength );
+  var asAllURLs = [];
+
+  for (var i = 0; i < formResponsesLength; i++) {
+    var formResponse = formResponses[i];
+    var thisEditableURL = formResponse.getEditResponseUrl();
+    Logger.log("fnlGetAllURLs2 ROWN response i=%s, val=%s, url=%s", parseInt(i),formResponse,thisEditableURL);
+    var dFormTimestamp = formResponse.getTimestamp();
+    var sFormTimestamp = formatTimestamp_RBL1(dFormTimestamp);
+
+		// Go thru all the items just to get the SGL Name and Course Title.
+    var itemResponses = formResponse.getItemResponses();
+    for (var j=0; j<itemResponses.length; j++) {
+      var xitemResponse = itemResponses[j];
+      var sQuestion = xitemResponse.getItem().getTitle();
+      var sAnswer = xitemResponse.getResponse().toString().replace(/\s*$/,"");
+      Logger.log("fnlGetAllUrls3 ROWN resp i=%s j=%s itemresp=%s Q=%s A=%s", 
+                 parseInt(i),parseInt(j),xitemResponse,sQuestion,sAnswer );
+      // Get the SGL name and course title for the long listing
+      if ( ! bProductionVersion) 
+      {                                     // T E S T 
+        if ( sQuestion == "Howzit?" ) {
+          sName = sAnswer;
+        } else if ( sQuestion == "Why?" ) {
+          sTitle = sAnswer;
+        }
+      } else
+      {                                     // P R O D U C T I O N 
+        if ( sQuestion == "SGL 1 Name" ) {
+          sName = sAnswer;
+        } else if ( sQuestion == "Course Title" ) {
+          sTitle = sAnswer;
+        }
+      }
+    }
+
+    // Store all the info away in the arrays to be returned.  
+    var nSub = i + 1;            // Humans are one-based, not zero-based.
+    var nSubRow = nSub + 1;      // Table header in row 1, zero-th subm, called 1, is in row 2.
+    //asURLs.push(thisEditableURL);
+    //asNames.push(sName);
+    //asTitles.push(sTitle);
+    var sLineHead = "------ Submission {0} row {3} \nSGL Name \"{1}\" Title \"{2}\" at {4}.  URL follows.".format(nSub,sName,sTitle,nSubRow,sFormTimestamp);
+    var sLineURL = "{0}".format(thisEditableURL);
+    asAllURLs.push(sLineHead);
+    asAllURLs.push(sLineURL);
+    asAllURLs.push(" ");
+	}
+	Logger.log("EXIT  fnlGetAllUrls result|%s|",asAllURLs);
+	return(asAllURLs);
+}
+
 
 //-------------------------------------------------
 // r e t u r n R o w N u m b e r F o r E v e n t 
@@ -393,7 +487,7 @@ function getLastFormResponse_RBL4(myoBig) {
   var form = FormApp.getActiveForm();
   var formResponses = form.getResponses();
   var email_user = Session.getActiveUser().getEmail();
-  vary mynRespNumber = myoBig.nRespNumber;
+  var mynRespNumber = myoBig.nRespNumber;
 
   var oReturnMe = { sMessage : "vvvvvv BUGCHECK: RowNumber out of range vvvvvv" 
                   };
@@ -433,7 +527,7 @@ Returns a (dictionary) object containing
 - oItems: dictionary, oItems[question] = answer
 */
   Logger.log("ENTER formatFormResponse, arg|%s|",myoResponse);
-  fnDumpObject(myoResponse,"formatFormResponse myoResponse in");
+  fnDumpObject(myoResponse,"formatFormResponse myoResponse arg in");
   // string format cheapo function from StackOverflow.
   if ( ! String.prototype.format ) {
     String.prototype.format = function() {
@@ -478,9 +572,10 @@ Returns a (dictionary) object containing
   asMess.push('======'); 
   oReturnMe.asMessage = asMess;
   oReturnMe.oItems = oItemlist;
-  Logger.log("itemlist=|%s|", oItemlist);
+  Logger.log("itemlist=|%s|", oReturnMe.oItems);
 
-  fnDumpObject(oReturnMe,"formatFormResponse oReturnMe exit");  
+  fnDumpObject(oReturnMe,"formatFormResponse oReturnMe exit"); 
+  Logger.log("EXIT  formatFormResponse, result|%s|",oReturnMe);
   return oReturnMe;
 }
 
@@ -498,11 +593,12 @@ Returns a dictionary object from formatFormResponse().
 plus
 - sEmailUser: SGL1's declared email string
 - sEditURL: editable URL for this event
+- lItemNames: array (list) of question strings
 */
 // For debugging, log the event contents, as much as we can see them.
 function fnoDumpEvent(event1) {
-  Logger.log("ENTER dumpEvent, arg|%s|",event1);
-  fnDumpObject(event1,"dumpev arg ");
+  Logger.log("ENTER fnoDumpEvent, arg|%s|",event1);
+  fnDumpObject(event1,"dumpEvent args ");
   var eResp = event1.response;
   var tmpEditURL = eResp.getEditResponseUrl();
 
@@ -541,6 +637,11 @@ function fnoDumpEvent(event1) {
     xItemTitle = xItem.getTitle();
     Logger.log("DUMPEV index|%s| id|%s| type|%s| title|%s|", xItemIndex,xItemId,xItemType,xItemTitle);
   }
+  var lItemNames = [];
+  for (q in oItemlist) lItemNames.push(q);
+  oReturnMe.oItemlist = oItemlist;
+  oReturnMe.lItemNames = lItemNames;
+  Logger.log("EXIT  fnoDumpEvent return|%s|",oReturnMe);
   return oReturnMe;
 }
 
@@ -602,9 +703,28 @@ function fnoDeepCopy(myoSomething) {
 function fnDumpObject(myoSomething,mysID) {
   for (var thing in myoSomething) {
     var thingval = myoSomething[thing];
-    Logger.log("DUMPO ID|%s| - key|%s|=val|%s|",mysID,thing,thingval);
+    Logger.log("fnDumpObject ID|%s| key|%s|=val|%s|",mysID,thing,thingval);
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
