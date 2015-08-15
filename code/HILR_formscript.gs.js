@@ -7,8 +7,18 @@
  * v05  20150814    RBLandau
  *                  New-ish version that almost works.  Still takes too much CPU time.  
  *                  Next: comment out all the old code that I think is no longer used 
- *                   and see if it still works.        
+ *                   and see if it still works.      
+ * v06  20150815    Carefully log email construction and sending.  
+ *                  In the future, we may have to worry about email length, which
+ *                   Mr Google limits to 20KB.  Boy, I hope JavaScript Unicode 
+ *                   doesn't count as two bytes per char.  Oops if so, already
+ *                   in danger.  
  */
+
+// Yes, with no 'var' this is deliberately a global.  
+// To be added to bottom of email.
+sVersionNumber = '06';
+sVersionDate = '20150815.1357'
 
 /**
  * @OnlyCurrentDoc
@@ -19,11 +29,6 @@
  * and not all of the user's files. The authorization request message
  * presented to users will reflect this limited scope.
  */
-
-// Yes, with no 'var' this is deliberately a global.  
-// To be added to bottom of email.
-sVersionNumber = '05';
-sVersionDate = '20150814.2009'
 
 /*
 *************************************************************
@@ -77,6 +82,7 @@ function sendEmailAfterSubmit_RBL1(e) {
   }
 
   sUpperBody += "\nEnd: " + getCurrentTimestamp_RBL1() + '\n';
+  Logger.log("UPPERBODY length|%s| completeUPPER||%s||endUPPER", sUpperBody.length, sUpperBody);
 
   //   L O W E R   B O D Y 
 
@@ -89,6 +95,7 @@ function sendEmailAfterSubmit_RBL1(e) {
   sLowerBody += '\nBeginning URL to blank form:\n' + oForm.getPublishedUrl() + '\n\n';
   sLowerBody += 'HILR CC Submision JS Script version ' + sVersionNumber + ' ' +  sVersionDate + '\n';
   sLowerBody += '=======end=======';
+  Logger.log("LOWERBODY length|%s| completeLOWER||%s||endLOWER", sLowerBody.length, sLowerBody);
 
   // Special version of the body goes to the author; may include debug log.  
   // Optional because the log can be reeeaaallly looong, 1000s of lines.
@@ -99,11 +106,11 @@ function sendEmailAfterSubmit_RBL1(e) {
     sExtraBody += '\n\nDebug log data follows.  Please ignore from here to end.\n\n';
     sExtraBody += sLogData;
   }
+  Logger.log("EXTRABODY length|%s| completeEXTRA||%s||endEXTRA", sExtraBody.length, sExtraBody);
 
   var sFullBody = sUpperBody + sLowerBody;
   var sLongBody = sFullBody + sExtraBody;
-    
-
+  Logger.log("LONGBODY length|%s| completeLONG||%s||endLONG", sLongBody.length, sLongBody);
 
 ////////////// needs work ///////////////
 
@@ -124,6 +131,7 @@ function sendEmailAfterSubmit_RBL1(e) {
                  , sTimestampBegin
                  , nRowNr
                );
+    Logger.log("EMAILSUBJECT complete|%s|",subject);
     // Get the email addresses of people who care.  
     var email_user = Session.getActiveUser().getEmail();
     var email2 = "landau@ricksoft.com";
@@ -131,10 +139,10 @@ function sendEmailAfterSubmit_RBL1(e) {
     var email4 = "receiver6_form@ricksoft.com";
     // For production, use only email2 and email3.  Comment out the others.  
     // Send an email with contents and a link to edit form with.
-    //GmailApp.sendEmail(email_user, subject, sFullBody);
-    //GmailApp.sendEmail(email2, subject, sFullBody);
-    //GmailApp.sendEmail(email3, subject, sFullBody);
-    GmailApp.sendEmail(email4, subject, sLongBody);
+    //fnActuallySendEmail(email_user, subject, sFullBody);
+    //fnActuallySendEmail(email2, subject, sFullBody);
+    //fnActuallySendEmail(email3, subject, sFullBody);
+    fnActuallySendEmail(email4, subject, sLongBody);
   } else
   {
     // HILR production version                          // P R O D U C T I O N
@@ -149,6 +157,7 @@ function sendEmailAfterSubmit_RBL1(e) {
                  , sSglEMail
                  , sTimestampBegin
                );
+    Logger.log("EMAILSUBJECT |%s|",subject);
     // Get the email addresses of people who care.  
     var email_user = Session.getActiveUser().getEmail();
     var email2 = "hilr-cc-submissions@googlegroups.com";
@@ -156,19 +165,19 @@ function sendEmailAfterSubmit_RBL1(e) {
     var email4 = "receiver7_form@ricksoft.com";
     // For production, use only email2 and email3.  Comment out the others.  
     // Send an email with contents and a link to edit form with.
-    //GmailApp.sendEmail(email_user, subject, sFullBody);
-    //GmailApp.sendEmail(email2, subject, sFullBody);    
-    //GmailApp.sendEmail(email3, subject, sFullBody);
-    GmailApp.sendEmail(email4, subject, sLongBody);
+    //fnActuallySendEmail(email_user, subject, sFullBody);
+    //fnActuallySendEmail(email2, subject, sFullBody);    
+    //fnActuallySendEmail(email3, subject, sFullBody);
+    fnActuallySendEmail(email4, subject, sLongBody);
   }
 
 
 
-
-////////////////// OLD //////////////////
 if (0)
 {
+/*********************************************************************
 
+////////////////// OLD //////////////////
   // Build up the email body from various parts.
   var sTimestampBegin = getCurrentTimestamp_RBL1();
   var body = 'Begin: ' + sTimestampBegin + '\n\n';
@@ -216,8 +225,6 @@ if (0)
   var form = FormApp.getActiveForm();
   body += '\nBeginning URL to blank form:\n' + form.getPublishedUrl() + '\n\n';
   body += '=======end=======';
-
-}//END if 0
 
 //   A P P E N D   L O G   F O R   D E B U G 
 
@@ -291,6 +298,19 @@ if (0)
     GmailApp.sendEmail(email3, subject, body);
     GmailApp.sendEmail(email4, subject, body2);
   }
+*********************************************************************/
+}//END if 0
+
+}
+
+
+//-------------------------------------------------
+// f n A c t u a l l y S e n d E m a i l 
+//-------------------------------------------------
+function fnActuallySendEmail(mysTarget, mysSubject, mysBody) {
+  Logger.log("ENTER fnActuallySendEmail to|%s| subj|%s| body|%s|", mysTarget, mysSubject, mysBody);
+  var result = GmailApp.sendEmail(mysTarget, mysSubject, mysBody);
+  Logger.log("EXIT  fnActuallySendEmail to|%s| subj|%s| body|%s| result|%s|", mysTarget, mysSubject, mysBody, result);
 }
 
 //-------------------------------------------------
