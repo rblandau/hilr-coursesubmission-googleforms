@@ -1,11 +1,11 @@
 /**
  * HILR FormScript for Curriculum Committee submissions.
- * V04 	20150309    RBLandau
+ * V04  20150309    RBLandau
  * V04x 20150814    RBLandau
  *                  Add a little debug info to old version, and update
  *                   the out-of-date version on the actual form.  
- * v05	20150814		RBLandau
- *									New-ish version that almost works.  Still takes too much CPU time.  
+ * v05  20150814    RBLandau
+ *                  New-ish version that almost works.  Still takes too much CPU time.  
  *                  Next: comment out all the old code that I think is no longer used 
  *                   and see if it still works.        
  */
@@ -22,8 +22,8 @@
 
 // Yes, with no 'var' this is deliberately a global.  
 // To be added to bottom of email.
-sVersionNumber = '04x';
-sVersionDate = '20150814.1301'
+sVersionNumber = '05';
+sVersionDate = '20150814.2009'
 
 /*
 *************************************************************
@@ -153,12 +153,12 @@ function sendEmailAfterSubmit_RBL1(e) {
     var email_user = Session.getActiveUser().getEmail();
     var email2 = "hilr-cc-submissions@googlegroups.com";
     var email3 = "dickr@mac.com";
-    var email4 = "receiver6_form@ricksoft.com";
+    var email4 = "receiver7_form@ricksoft.com";
     // For production, use only email2 and email3.  Comment out the others.  
     // Send an email with contents and a link to edit form with.
     //GmailApp.sendEmail(email_user, subject, sFullBody);
-    GmailApp.sendEmail(email2, subject, sFullBody);    
-    GmailApp.sendEmail(email3, subject, sFullBody);
+    //GmailApp.sendEmail(email2, subject, sFullBody);    
+    //GmailApp.sendEmail(email3, subject, sFullBody);
     GmailApp.sendEmail(email4, subject, sLongBody);
   }
 
@@ -708,8 +708,15 @@ function fnDumpObject(myoSomething,mysID) {
 }
 
 
+//-------------------------------------------------
+// d u m m y F u n c t i o n ( )  
+//-------------------------------------------------
+function dummyFunction() {
+// This function does nothing. 
+// It is here so that I can run a dummy function to force authorization of the script.  
+// Grumble, grumble, Mr Google.  
 
-
+}
 
 
 
