@@ -22,12 +22,13 @@
  *                   Include little test functions for this.
  *                  Change From name on email to HILR something or other.
  *                  Finally remove the old code.  
+ *                  Test some slight reformatting of the message.  
  */
 
 // Yes, with no 'var' this is deliberately a global.  
 // To be added to bottom of email.
 sVersionNumber = '08';
-sVersionDate = '20150817.1148'
+sVersionDate = '20150817.1540'
 
 /**
  * @OnlyCurrentDoc
@@ -85,26 +86,28 @@ function sendEmailAfterSubmit_RBL1(e) {
     var sAnswer = oItemDict[sQuestion];
     if (sAnswer != undefined)
     {
-    	var sLine = 'Q: "' + sQuestion + '" == A: "' + sAnswer + '"\n';
+    	var sLine = '' + sQuestion + ' == "' + sAnswer + '"\n';
     	sUpperBody += sLine;
     }
   }
 
   sUpperBody += "\nEnd: " + getCurrentTimestamp_RBL1() + '\n';
-  Logger.log("UPPERBODY length|%s| completeUPPERBODY||%s||endUPPERBODY", sUpperBody.length, sUpperBody);
+  //Logger.log("UPPERBODY length|%s| completeUPPERBODY||%s||endUPPERBODY", sUpperBody.length, sUpperBody);
 
   //   L O W E R   B O D Y 
 
   var sLowerBody = "";
   var sURLList = "URLs for ALL responses, in row order.  Look at SGL and Title.\n\n";
   var asAllURLs = fnlGetAllUrls();
-  sURLList += asAllURLs.join("\n") + "\n\n";
+  sURLList += asAllURLs.join("\n") + "\n";
   sLowerBody += "\n" + sURLList; 
   var oForm = FormApp.getActiveForm();
   sLowerBody += '\nBeginning URL to blank form:\n' + oForm.getPublishedUrl() + '\n\n';
-  sLowerBody += 'HILR CC Submision JS Script version ' + sVersionNumber + ' ' +  sVersionDate + '\n';
-  sLowerBody += '=======end=======';
-  Logger.log("LOWERBODY length|%s| completeLOWERBODY||%s||endLOWERBODY", sLowerBody.length, sLowerBody);
+  sLowerBody += 'HILR CC Submision JS Script version ' + sVersionNumber + ' ' +  sVersionDate + '  \n';
+  sLowerBody += '=======end=======\n';
+  //Logger.log("LOWERBODY length|%s| completeLOWERBODY||%s||endLOWERBODY", sLowerBody.length, sLowerBody);
+
+  //   E X T R A   B O D Y 
 
   // Special version of the body goes to the author; may include debug log.  
   // Optional because the log can be reeeaaallly looong, 1000s of lines.
@@ -117,11 +120,13 @@ function sendEmailAfterSubmit_RBL1(e) {
     sExtraBody += sLogData;
     sExtraBody += "\n ====== END of log data ======\n";
   }
-  Logger.log("EXTRABODY length|%s| completeEXTRABODY||%s||endEXTRABODY", sExtraBody.length, sExtraBody);
+  //Logger.log("EXTRABODY length|%s| completeEXTRABODY||%s||endEXTRABODY", sExtraBody.length, sExtraBody);
+
+  //   F U L L   B O D Y 
 
   var sFullBody = sUpperBody + sLowerBody;
   var sLongBody = sFullBody + sExtraBody;
-  Logger.log("LONGBODY length|%s| completeLONGBODY||%s||endLONGBODY", sLongBody.length, sLongBody);
+  //Logger.log("LONGBODY length|%s| completeLONGBODY||%s||endLONGBODY", sLongBody.length, sLongBody);
 
 ////////////// needs work ///////////////
 
@@ -151,8 +156,8 @@ function sendEmailAfterSubmit_RBL1(e) {
     // For production, use only email2 and email3.  Comment out the others.  
     // Send an email with contents and a link to edit form with.
     //fnActuallySendEmail(email_user, subject, sFullBody);
-    //fnActuallySendEmail(email2, subject, sFullBody);
-    //fnActuallySendEmail(email3, subject, sFullBody);
+    fnActuallySendEmail(email2, subject, sFullBody);
+    fnActuallySendEmail(email3, subject, sFullBody);
     fnActuallySendEmail(email4, subject, sLongBody);
   } else
   {
@@ -173,302 +178,17 @@ function sendEmailAfterSubmit_RBL1(e) {
     var email_user = Session.getActiveUser().getEmail();
     var email2 = "hilr-cc-submissions@googlegroups.com";
     var email3 = "dickr@mac.com";
-    var email4 = "receiver7_form@ricksoft.com";
+    var email4 = "receiver8_form@ricksoft.com";
     // For production, use only email2 and email3.  Comment out the others.  
+    //  Oh, and email4 is a debug copy to me, best left turned on.  
     // Send an email with contents and a link to edit form with.
     //fnActuallySendEmail(email_user, subject, sFullBody);
-    //fnActuallySendEmail(email2, subject, sFullBody);    
-    //fnActuallySendEmail(email3, subject, sFullBody);
+    fnActuallySendEmail(email2, subject, sFullBody);    
+    fnActuallySendEmail(email3, subject, sFullBody);
     fnActuallySendEmail(email4, subject, sLongBody);
   }
 
-
-
-if (0)
-{
-/*********************************************************************
-
-////////////////// OLD //////////////////
-  // Build up the email body from various parts.
-  var sTimestampBegin = getCurrentTimestamp_RBL1();
-  var body = 'Begin: ' + sTimestampBegin + '\n\n';
-  var maybeEditURL = returnResponseURL_RBL0(e);
-
-  // Get the right row number and all the URLs.  
-  // CAUTION: the row number returned may be negative, i.e., error, 
-  //  because the correct data cannot be found in the sheet -- YET!
-  //  Sometimes this runs before the data has reached the sheet.
-  //  The list of URLs is still valid in that case, but incomplete
-  //  because the current submission is missing.  
-  var oRow = returnRowNumberForEvent_RBL5(e);
-  var maybeRespNumber = oRow.nRespNumber;
-  var maybeSubmNumber = oRow.nSubmNumber;
-  var maybeRowNumber = oRow.nRowNumber;
-  
-  // Issue warning if data for this submission cannot be found in sheet.
-  if (maybeRespNumber < 0)
-  { 
-    var sOopsMsg = "WARNING: Unable to locate correct EditURL for this entry.\n"
-        + "Data in the message part of this email may be corrupt.  --RBL 20150306\n"
-        + "(Cause: nRespNumber is negative.)\n";
-    body = sOopsMsg + body;
-  }
-  // But the edit URL for the latest event entry is still okay.
-  body += 'Editable URL with previous responses (below) filled in:\n' + maybeEditURL + '\n\n';
-
-  // Get the object containing questions and answers (and other stuff).  
-  var oResp = getLastFormResponse_RBL4(oRow);
-  // Paste the Q&A lines together into a single string.  
-  //var asBodyLines = oResp.asMessage;
-  // Nope, today get the Q&A data from the event object; more reliable.
-  var asBodyLines = oEvent.asMessage;
-  var sMessage = asBodyLines.join("\n") + '\n';
-  body += sMessage;
-  body += "End: " + getCurrentTimestamp_RBL1() + '\n';
-
-//   A L L   U R L S 
-
-  // Add list of all URLs, which came from searching for the row.
-  var asAllURLs = oRow.asAllURLs;
-  var sURLList = "URLs for ALL responses, in row order.  Look at SGL and Title.\n\n";
-  sURLList += asAllURLs.join("\n") + "\n\n";
-  body += "\n" + sURLList; 
-  var form = FormApp.getActiveForm();
-  body += '\nBeginning URL to blank form:\n' + form.getPublishedUrl() + '\n\n';
-  body += '=======end=======';
-
-//   A P P E N D   L O G   F O R   D E B U G 
-
-  // Special version of the body goes to the author; may include debug log.  
-  // Optional because the log can be reeeaaallly looong, 1000s of lines.
-  var body2 = body;
-  if (bIncludeLog) 
-  {
-    var sLogData = Logger.getLog().toString();
-    body2 = body + '\n\nDebug log data follows.  Please ignore from here to end.\n\n';
-    body2 += sLogData;
-  }
-
-
-//   F O R M   A N D   S E N D   E M A I L 
-
-  // Different email destinations depending on production vs test.
-  if (! bProductionVersion)         // <=========== TEST VS PRODUCTION =============
-  {
-    // Rick's Howzit test version                       // T E S T 
-    // Build new subject line.
-    var oMess = oResp.oItems;     // object oMess[questionstring] = answerstring
-    var sSglName = findItemResponseToKey("Howzit?",oMess);
-    var sSglEMail = findItemResponseToKey("Why?",oMess);
-    var nSubmNr = maybeSubmNumber; 
-    var nRowNr = maybeRowNumber;
-    var subject = "Row # {4} (submission {0}); from {1}; email={2}; at {3}".format( 
-                   nSubmNr 
-                 , sSglName
-                 , sSglEMail
-                 , sTimestampBegin
-                 , nRowNr
-               );
-    // Get the email addresses of people who care.  
-    var email_user = Session.getActiveUser().getEmail();
-    var email2 = "landau@ricksoft.com";
-    var email3 = "theatrewonk@gmail.com";
-    var email4 = "receiver6_form@ricksoft.com";
-    // For production, use only email2 and email3.  Comment out the others.  
-    // Send an email with contents and a link to edit form with.
-    //GmailApp.sendEmail(email_user, subject, body);
-    //GmailApp.sendEmail(email2, subject, body);
-    //GmailApp.sendEmail(email3, subject, body);
-    GmailApp.sendEmail(email4, subject, body2);
-  } else
-  {
-    // HILR production version                          // P R O D U C T I O N
-    // New subject line
-    var oMess = oResp.oItems;     // object oMess[questionstring] = answerstring
-    // HILR production version
-    var sSglName = findItemResponseToKey("SGL 1 Name",oMess);
-    var sSglEMail = findItemResponseToKey("SGL 1 eMail",oMess);
-    var nSubmNr = maybeSubmNumber; 
-    var nRowNr = maybeRowNumber;
-    var subject = "Row # {4} (submission {0}); from {1}; email={2}; at {3}".format( 
-                   nSubmNr 
-                 , sSglName
-                 , sSglEMail
-                 , sTimestampBegin
-                 , nRowNr
-               );
-    // Get the email addresses of people who care.  
-    var email_user = Session.getActiveUser().getEmail();
-    var email2 = "hilr-cc-submissions@googlegroups.com";
-    var email3 = "theatrewonk@gmail.com";
-    var email4 = "receiver6_form@ricksoft.com";
-    // For production, use only email2 and email3.  Comment out the others.  
-    // Send an email with contents and a link to edit form with.
-    //GmailApp.sendEmail(email_user, subject, body);
-    GmailApp.sendEmail(email2, subject, body);    
-    GmailApp.sendEmail(email3, subject, body);
-    GmailApp.sendEmail(email4, subject, body2);
-  }
-
-//-------------------------------------------------
-// g e t L a s t F o r m R e s p o n s e 
-//-------------------------------------------------
-function getLastFormResponse_RBL4(myoBig) {
-  Logger.log("ENTER getLastFormResponse arg|%s|", mynRespNumber);
-  var form = FormApp.getActiveForm();
-  var formResponses = form.getResponses();
-  var email_user = Session.getActiveUser().getEmail();
-  var mynRespNumber = myoBig.nRespNumber;
-
-  var oReturnMe = { sMessage : "vvvvvv BUGCHECK: RowNumber out of range vvvvvv" 
-                  };
-  if (mynRespNumber < 0)
-  {
-    // If bad row number, insert bad but acceptable values here.
-    //  Theoretically, this is impossible, but you never know.  
-    //  E.g., bad row number is returned if this item not found (YET) in sheet.
-    oReturnMe.sResponse = "BUGCHECK: mynRespNumber RowNumber negative. Let Rick know asap at landau@ricksoft.com.";
-    oReturnMe.nResponse = mynRespNumber;
-    oReturnMe.oItemResponses = {};
-    oReturnMe.sEmailUser = "BUGCHECK: Bad sEmailUser.  Let Rick know asap at landau@ricksoft.com.";
-    oReturnMe.asMessage = ["BUGCHECK: Bad asMessage.  Let Rick know asap at landau@ricksoft.com.", "END of array."];
-    oReturnMe.oItems = {};
-  } else
-  { 
-    // Get real data from the Response object.
-    ii = mynRespNumber;
-    var formResponse = formResponses[ii];
-    oReturnMe = formatFormResponse_RBL4(formResponse);
-  }
-    return oReturnMe;
 }
-
-//-------------------------------------------------
-// r e t u r n R o w N u m b e r F o r E v e n t 
-//-------------------------------------------------
-function returnRowNumberForEvent_RBL5(e) {
-  // Theory: get the real editable URL from the event, then compare 
-  // it against all the responses' URLs and see which one matches.
-/**
-Returns an object containing these properties:
-- nRowNumber: integer number of the row that matches the event
-- asAllURLs: array of strings of readable answers, in pairs: name, title, then URL
-And three parallel arrays:
-- asNames: array of strings of SGL1 names
-- asTitles: array of strings of Titles
-- asURLs: array of strings of URLs
-*/
-/*
-  Logger.log("ENTER returnRowNumberForEvent arg|%s|", e);
-  
-  // string format cheapo function from StackOverflow.
-  if ( ! String.prototype.format ) {
-    String.prototype.format = function() {
-      var args = arguments;
-      return this.replace(/{(\d+)}/g, function(match, number) { 
-        return typeof args[number] != 'undefined'
-        ? args[number]
-        : match
-        ;
-      });
-    }
-  }
-  
-  // Dictionary object to convey answers.
-  var oReturnMe = {};
-  var asURLs = [];
-  var asNames = [];
-  var asTitles = [];
-  var asAllURLs = [];
-  
-  // This is what the event thinks the edit URL is.  
-  var eResp = e.response;
-  var eventsEditableURL = eResp.getEditResponseUrl();
-  oReturnMe.sEventURL = eventsEditableURL;
-  
-  // Compare the event's URL with all the responses.
-  var form = FormApp.getActiveForm();
-  var formResponses = form.getResponses();
-  var formResponsesLength = parseInt(formResponses.length);
-  Logger.log("ROWN formResponses.length=%s", formResponsesLength );
-  var nRespAnswer = -999;
-  for (var i = 0; i < formResponsesLength; i++) {
-    var formResponse = formResponses[i];
-    var thisEditableURL = formResponse.getEditResponseUrl();
-    Logger.log("ROWN response i=%s, val=%s, url=%s", parseInt(i),formResponse,thisEditableURL);
-    var dFormTimestamp = formResponse.getTimestamp();
-    var sFormTimestamp = formatTimestamp_RBL1(dFormTimestamp);
-    
-    var itemResponses = formResponse.getItemResponses();
-    for (var j=0; j<itemResponses.length; j++) {
-      var xitemResponse = itemResponses[j];
-      var sQuestion = xitemResponse.getItem().getTitle();
-      var sAnswer = xitemResponse.getResponse().toString().replace(/\s*$/,"");
-      Logger.log("ROWN resp i=%s j=%s itemresp=%s Q=%s A=%s", 
-                 parseInt(i),parseInt(j),xitemResponse,sQuestion,sAnswer );
-
-      // Get the SGL name and course title for the long listing
-      if ( ! bProductionVersion) 
-      {                                     // T E S T 
-        if ( sQuestion == "Howzit?" ) {
-          sName = sAnswer;
-        } else if ( sQuestion == "Why?" ) {
-          sTitle = sAnswer;
-        }
-      } else
-      {                                     // P R O D U C T I O N 
-        if ( sQuestion == "SGL 1 Name" ) {
-          sName = sAnswer;
-        } else if ( sQuestion == "Course Title" ) {
-          sTitle = sAnswer;
-        }
-      }
-    }
-    // Store all the info away in the arrays to be returned.  
-    nSub = i + 1;            // Humans are one-based, not zero-based.
-    nSubRow = nSub + 1;      // Table header in row 1, zero-th subm, called 1, is in row 2.
-    asURLs.push(thisEditableURL);
-    asNames.push(sName);
-    asTitles.push(sTitle);
-    sLineHead = "------ Submission {0} row {3}  Name \"{1}\" Title \"{2}\" at {4}.  URL follows.".format(nSub,sName,sTitle,nSubRow,sFormTimestamp);
-    sLineURL = "{0}".format(thisEditableURL);
-    asAllURLs.push(sLineHead);
-    asAllURLs.push(sLineURL);
-    asAllURLs.push(" ");
-    // And if this is the magic row in the response list, save its number.
-    // Note that this index is zero-based, not for human consumption.   
-    if (thisEditableURL == eventsEditableURL) {
-        nRespAnswer = i;
-        Logger.log("ROWN *FOUND* URL match row=%s", i);
-    }
-  }
-  // Put everything into the object to be returned to caller.  
-  oReturnMe.asURLs = asURLs;
-  oReturnMe.asNames = asNames;
-  oReturnMe.asTitles = asTitles;
-  oReturnMe.asAllURLs = asAllURLs;
-  oReturnMe.nRespNumber = nRespAnswer;      // The response number, starting at zero.
-  oReturnMe.nSubmNumber = nRespAnswer+1;    // The one-based number of the submission.
-  oReturnMe.nRowNumber = nRespAnswer+2;     // The row number in the table where it should be.
-  // Okay, I'm confused.  
-  
-  return oReturnMe;    // All this fuss for one little integer.
-}
-
-//-------------------------------------------------
-// r e t u r n R e s p o n s e U R L 
-//-------------------------------------------------
-function returnResponseURL_RBL0(e) {
-  var eResp = e.response;
-  var maybeEditableURL = eResp.getEditResponseUrl();
-  return maybeEditableURL;
-}
-
-*********************************************************************/
-}//END if 0
-
-}
-
 
 //-------------------------------------------------
 // f n l G e t A l l U r l s 
@@ -525,17 +245,17 @@ function fnlGetAllUrls() {
     //asURLs.push(thisEditableURL);
     //asNames.push(sName);
     //asTitles.push(sTitle);
-    var sLineHead = "------ Submission {0} row {3} \nSGL Name \"{1}\" Title \"{2}\" at {4}.  URL follows.".format(nSub,sName,sTitle,nSubRow,sFormTimestamp);
+    var sLineHead = "------ {1}: \"{2}\"".format(nSub,sName,sTitle,nSubRow,sFormTimestamp);
     var sLineURL = "{0}".format(thisEditableURL);
+    var sLineTrailer = "Submission {0} row {3} at {4}.".format(nSub,sName,sTitle,nSubRow,sFormTimestamp);
     asAllURLs.push(sLineHead);
     asAllURLs.push(sLineURL);
+    asAllURLs.push(sLineTrailer);
     asAllURLs.push(" ");
 	}
 	Logger.log("EXIT  fnlGetAllUrls result|%s|",asAllURLs);
 	return(asAllURLs);
 }
-
-
 
 //-------------------------------------------------
 // f o r m a t F o r m R e s p o n s e 
@@ -580,7 +300,7 @@ Returns a (dictionary) object containing
 
     for (var jj = 0; jj < itemResponses.length; jj++ ) {
       var itemResponse = itemResponses[jj];
-      var sAns = 'Q: {1} :: "{2}"';  // part of msg
+      var sAns = '{1} :: "{2}"';  // part of msg
       var sQuestion = itemResponse.getItem().getTitle();
       var sAnswer = itemResponse.getResponse()
       sAns = sAns.format( 
@@ -747,9 +467,9 @@ function dummyFunction() {
 // f n A c t u a l l y S e n d E m a i l 
 //-------------------------------------------------
 function fnActuallySendEmail(mysTarget, mysSubject, mysBody) {
-  Logger.log("ENTER fnActuallySendEmail to|%s| subj|%s| beginBODY||%s||BODYend", mysTarget, mysSubject, mysBody);
+  Logger.log("ENTER fnActuallySendEmail to|%s| subj|%s| bodylength|%s| beginBODY||%s||BODYend", mysTarget, mysSubject, mysBody.length, mysBody);
   var result = MailApp.sendEmail(mysTarget, mysSubject, mysBody,{name:"HILR CC Course Submission Form"});
-  Logger.log("EXIT  fnActuallySendEmail to|%s| subj|%s| body||%s|| result|%s|", mysTarget, mysSubject, mysBody, result);
+  Logger.log("EXIT  fnActuallySendEmail to|%s| subj|%s| result|%s|", mysTarget, mysSubject, result);
 }
 
 //-------------------------------------------------
