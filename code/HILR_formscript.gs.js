@@ -13,12 +13,21 @@
  *                   Mr Google limits to 20KB.  Boy, I hope JavaScript Unicode 
  *                   doesn't count as two bytes per char.  Oops if so, already
  *                   in danger.  
+ * v07  20150816    Remove most of the high-output logging to that it doesn't 
+ *                   get truncated anymore.  
+ *                  And don't include the log data at all; use a short stem value.  
+ *                  Add dummy routines to test sending email.  
+ *                  And comment out a lot of old code.
+ * v08  20150817    Use MailApp instead of GmailApp today, works.  
+ *                   Include little test functions for this.
+ *                  Change From name on email to HILR something or other.
+ *                  Finally remove the old code.  
  */
 
 // Yes, with no 'var' this is deliberately a global.  
 // To be added to bottom of email.
-sVersionNumber = '06';
-sVersionDate = '20150815.1357'
+sVersionNumber = '08';
+sVersionDate = '20150817.1148'
 
 /**
  * @OnlyCurrentDoc
@@ -82,7 +91,7 @@ function sendEmailAfterSubmit_RBL1(e) {
   }
 
   sUpperBody += "\nEnd: " + getCurrentTimestamp_RBL1() + '\n';
-  Logger.log("UPPERBODY length|%s| completeUPPER||%s||endUPPER", sUpperBody.length, sUpperBody);
+  Logger.log("UPPERBODY length|%s| completeUPPERBODY||%s||endUPPERBODY", sUpperBody.length, sUpperBody);
 
   //   L O W E R   B O D Y 
 
@@ -95,22 +104,24 @@ function sendEmailAfterSubmit_RBL1(e) {
   sLowerBody += '\nBeginning URL to blank form:\n' + oForm.getPublishedUrl() + '\n\n';
   sLowerBody += 'HILR CC Submision JS Script version ' + sVersionNumber + ' ' +  sVersionDate + '\n';
   sLowerBody += '=======end=======';
-  Logger.log("LOWERBODY length|%s| completeLOWER||%s||endLOWER", sLowerBody.length, sLowerBody);
+  Logger.log("LOWERBODY length|%s| completeLOWERBODY||%s||endLOWERBODY", sLowerBody.length, sLowerBody);
 
   // Special version of the body goes to the author; may include debug log.  
   // Optional because the log can be reeeaaallly looong, 1000s of lines.
   var sExtraBody = "";
   if (bIncludeLog) 
   {
-    var sLogData = Logger.getLog().toString();
-    sExtraBody += '\n\nDebug log data follows.  Please ignore from here to end.\n\n';
+    //var sLogData = Logger.getLog().toString();
+    var sLogData = "\n=\n==\n===\n   Short stand-in stem for log data, just to see what happens.\n===\n==\n=\n";
+    sExtraBody += '\n\n====== Debug log data follows.  Please ignore from here to end. ======\n\n';
     sExtraBody += sLogData;
+    sExtraBody += "\n ====== END of log data ======\n";
   }
-  Logger.log("EXTRABODY length|%s| completeEXTRA||%s||endEXTRA", sExtraBody.length, sExtraBody);
+  Logger.log("EXTRABODY length|%s| completeEXTRABODY||%s||endEXTRABODY", sExtraBody.length, sExtraBody);
 
   var sFullBody = sUpperBody + sLowerBody;
   var sLongBody = sFullBody + sExtraBody;
-  Logger.log("LONGBODY length|%s| completeLONG||%s||endLONG", sLongBody.length, sLongBody);
+  Logger.log("LONGBODY length|%s| completeLONGBODY||%s||endLONGBODY", sLongBody.length, sLongBody);
 
 ////////////// needs work ///////////////
 
@@ -298,95 +309,39 @@ if (0)
     GmailApp.sendEmail(email3, subject, body);
     GmailApp.sendEmail(email4, subject, body2);
   }
-*********************************************************************/
-}//END if 0
-
-}
-
 
 //-------------------------------------------------
-// f n A c t u a l l y S e n d E m a i l 
+// g e t L a s t F o r m R e s p o n s e 
 //-------------------------------------------------
-function fnActuallySendEmail(mysTarget, mysSubject, mysBody) {
-  Logger.log("ENTER fnActuallySendEmail to|%s| subj|%s| body|%s|", mysTarget, mysSubject, mysBody);
-  var result = GmailApp.sendEmail(mysTarget, mysSubject, mysBody);
-  Logger.log("EXIT  fnActuallySendEmail to|%s| subj|%s| body|%s| result|%s|", mysTarget, mysSubject, mysBody, result);
-}
-
-//-------------------------------------------------
-// r e t u r n R e s p o n s e U R L 
-//-------------------------------------------------
-function returnResponseURL_RBL0(e) {
-  var eResp = e.response;
-  var maybeEditableURL = eResp.getEditResponseUrl();
-  return maybeEditableURL;
-}
-
-//-------------------------------------------------
-// f n l G e t A l l U r l s 
-//-------------------------------------------------
-function fnlGetAllUrls() {
-	/**
-	Returns a string array of formatted URLs, in order from the sheet: 
-	 asAllUrls
-	*/
-  Logger.log("ENTER fnlGetAllUrls ");
-
+function getLastFormResponse_RBL4(myoBig) {
+  Logger.log("ENTER getLastFormResponse arg|%s|", mynRespNumber);
   var form = FormApp.getActiveForm();
   var formResponses = form.getResponses();
-  var formResponsesLength = parseInt(formResponses.length);
-  Logger.log("fnlGetAllUrls1 ROWN formResponses.length=%s", formResponsesLength );
-  var asAllURLs = [];
+  var email_user = Session.getActiveUser().getEmail();
+  var mynRespNumber = myoBig.nRespNumber;
 
-  for (var i = 0; i < formResponsesLength; i++) {
-    var formResponse = formResponses[i];
-    var thisEditableURL = formResponse.getEditResponseUrl();
-    Logger.log("fnlGetAllURLs2 ROWN response i=%s, val=%s, url=%s", parseInt(i),formResponse,thisEditableURL);
-    var dFormTimestamp = formResponse.getTimestamp();
-    var sFormTimestamp = formatTimestamp_RBL1(dFormTimestamp);
-
-		// Go thru all the items just to get the SGL Name and Course Title.
-    var itemResponses = formResponse.getItemResponses();
-    for (var j=0; j<itemResponses.length; j++) {
-      var xitemResponse = itemResponses[j];
-      var sQuestion = xitemResponse.getItem().getTitle();
-      var sAnswer = xitemResponse.getResponse().toString().replace(/\s*$/,"");
-      Logger.log("fnlGetAllUrls3 ROWN resp i=%s j=%s itemresp=%s Q=%s A=%s", 
-                 parseInt(i),parseInt(j),xitemResponse,sQuestion,sAnswer );
-      // Get the SGL name and course title for the long listing
-      if ( ! bProductionVersion) 
-      {                                     // T E S T 
-        if ( sQuestion == "Howzit?" ) {
-          sName = sAnswer;
-        } else if ( sQuestion == "Why?" ) {
-          sTitle = sAnswer;
-        }
-      } else
-      {                                     // P R O D U C T I O N 
-        if ( sQuestion == "SGL 1 Name" ) {
-          sName = sAnswer;
-        } else if ( sQuestion == "Course Title" ) {
-          sTitle = sAnswer;
-        }
-      }
-    }
-
-    // Store all the info away in the arrays to be returned.  
-    var nSub = i + 1;            // Humans are one-based, not zero-based.
-    var nSubRow = nSub + 1;      // Table header in row 1, zero-th subm, called 1, is in row 2.
-    //asURLs.push(thisEditableURL);
-    //asNames.push(sName);
-    //asTitles.push(sTitle);
-    var sLineHead = "------ Submission {0} row {3} \nSGL Name \"{1}\" Title \"{2}\" at {4}.  URL follows.".format(nSub,sName,sTitle,nSubRow,sFormTimestamp);
-    var sLineURL = "{0}".format(thisEditableURL);
-    asAllURLs.push(sLineHead);
-    asAllURLs.push(sLineURL);
-    asAllURLs.push(" ");
-	}
-	Logger.log("EXIT  fnlGetAllUrls result|%s|",asAllURLs);
-	return(asAllURLs);
+  var oReturnMe = { sMessage : "vvvvvv BUGCHECK: RowNumber out of range vvvvvv" 
+                  };
+  if (mynRespNumber < 0)
+  {
+    // If bad row number, insert bad but acceptable values here.
+    //  Theoretically, this is impossible, but you never know.  
+    //  E.g., bad row number is returned if this item not found (YET) in sheet.
+    oReturnMe.sResponse = "BUGCHECK: mynRespNumber RowNumber negative. Let Rick know asap at landau@ricksoft.com.";
+    oReturnMe.nResponse = mynRespNumber;
+    oReturnMe.oItemResponses = {};
+    oReturnMe.sEmailUser = "BUGCHECK: Bad sEmailUser.  Let Rick know asap at landau@ricksoft.com.";
+    oReturnMe.asMessage = ["BUGCHECK: Bad asMessage.  Let Rick know asap at landau@ricksoft.com.", "END of array."];
+    oReturnMe.oItems = {};
+  } else
+  { 
+    // Get real data from the Response object.
+    ii = mynRespNumber;
+    var formResponse = formResponses[ii];
+    oReturnMe = formatFormResponse_RBL4(formResponse);
+  }
+    return oReturnMe;
 }
-
 
 //-------------------------------------------------
 // r e t u r n R o w N u m b e r F o r E v e n t 
@@ -403,6 +358,7 @@ And three parallel arrays:
 - asTitles: array of strings of Titles
 - asURLs: array of strings of URLs
 */
+/*
   Logger.log("ENTER returnRowNumberForEvent arg|%s|", e);
   
   // string format cheapo function from StackOverflow.
@@ -500,37 +456,85 @@ And three parallel arrays:
 }
 
 //-------------------------------------------------
-// g e t L a s t F o r m R e s p o n s e 
+// r e t u r n R e s p o n s e U R L 
 //-------------------------------------------------
-function getLastFormResponse_RBL4(myoBig) {
-  Logger.log("ENTER getLastFormResponse arg|%s|", mynRespNumber);
+function returnResponseURL_RBL0(e) {
+  var eResp = e.response;
+  var maybeEditableURL = eResp.getEditResponseUrl();
+  return maybeEditableURL;
+}
+
+*********************************************************************/
+}//END if 0
+
+}
+
+
+//-------------------------------------------------
+// f n l G e t A l l U r l s 
+//-------------------------------------------------
+function fnlGetAllUrls() {
+	/**
+	Returns a string array of formatted URLs, in order from the sheet: 
+	 asAllUrls
+	*/
+  Logger.log("ENTER fnlGetAllUrls ");
+
   var form = FormApp.getActiveForm();
   var formResponses = form.getResponses();
-  var email_user = Session.getActiveUser().getEmail();
-  var mynRespNumber = myoBig.nRespNumber;
+  var formResponsesLength = parseInt(formResponses.length);
+  Logger.log("fnlGetAllUrls1 ROWN formResponses.length=%s", formResponsesLength );
+  var asAllURLs = [];
 
-  var oReturnMe = { sMessage : "vvvvvv BUGCHECK: RowNumber out of range vvvvvv" 
-                  };
-  if (mynRespNumber < 0)
-  {
-    // If bad row number, insert bad but acceptable values here.
-    //  Theoretically, this is impossible, but you never know.  
-    //  E.g., bad row number is returned if this item not found (YET) in sheet.
-    oReturnMe.sResponse = "BUGCHECK: mynRespNumber RowNumber negative. Let Rick know asap at landau@ricksoft.com.";
-    oReturnMe.nResponse = mynRespNumber;
-    oReturnMe.oItemResponses = {};
-    oReturnMe.sEmailUser = "BUGCHECK: Bad sEmailUser.  Let Rick know asap at landau@ricksoft.com.";
-    oReturnMe.asMessage = ["BUGCHECK: Bad asMessage.  Let Rick know asap at landau@ricksoft.com.", "END of array."];
-    oReturnMe.oItems = {};
-  } else
-  { 
-    // Get real data from the Response object.
-    ii = mynRespNumber;
-    var formResponse = formResponses[ii];
-    oReturnMe = formatFormResponse_RBL4(formResponse);
-  }
-    return oReturnMe;
+  for (var i = 0; i < formResponsesLength; i++) {
+    var formResponse = formResponses[i];
+    var thisEditableURL = formResponse.getEditResponseUrl();
+    //Logger.log("fnlGetAllURLs2 ROWN response i=%s, val=%s, url=%s", parseInt(i),formResponse,thisEditableURL);
+    var dFormTimestamp = formResponse.getTimestamp();
+    var sFormTimestamp = formatTimestamp_RBL1(dFormTimestamp);
+
+		// Go thru all the items just to get the SGL Name and Course Title.
+    var itemResponses = formResponse.getItemResponses();
+    for (var j=0; j<itemResponses.length; j++) {
+      var xitemResponse = itemResponses[j];
+      var sQuestion = xitemResponse.getItem().getTitle();
+      var sAnswer = xitemResponse.getResponse().toString().replace(/\s*$/,"");
+      //Logger.log("fnlGetAllUrls3 ROWN resp i=%s j=%s itemresp=%s Q=%s A=%s", 
+      //           parseInt(i),parseInt(j),xitemResponse,sQuestion,sAnswer );
+      // Get the SGL name and course title for the long listing
+      if ( ! bProductionVersion) 
+      {                                     // T E S T 
+        if ( sQuestion == "Howzit?" ) {
+          sName = sAnswer;
+        } else if ( sQuestion == "Why?" ) {
+          sTitle = sAnswer;
+        }
+      } else
+      {                                     // P R O D U C T I O N 
+        if ( sQuestion == "SGL 1 Name" ) {
+          sName = sAnswer;
+        } else if ( sQuestion == "Course Title" ) {
+          sTitle = sAnswer;
+        }
+      }
+    }
+
+    // Store all the info away in the arrays to be returned.  
+    var nSub = i + 1;            // Humans are one-based, not zero-based.
+    var nSubRow = nSub + 1;      // Table header in row 1, zero-th subm, called 1, is in row 2.
+    //asURLs.push(thisEditableURL);
+    //asNames.push(sName);
+    //asTitles.push(sTitle);
+    var sLineHead = "------ Submission {0} row {3} \nSGL Name \"{1}\" Title \"{2}\" at {4}.  URL follows.".format(nSub,sName,sTitle,nSubRow,sFormTimestamp);
+    var sLineURL = "{0}".format(thisEditableURL);
+    asAllURLs.push(sLineHead);
+    asAllURLs.push(sLineURL);
+    asAllURLs.push(" ");
+	}
+	Logger.log("EXIT  fnlGetAllUrls result|%s|",asAllURLs);
+	return(asAllURLs);
 }
+
 
 
 //-------------------------------------------------
@@ -655,10 +659,10 @@ function fnoDumpEvent(event1) {
     xItemId = xItem.getId();
     xItemType = xItem.getType();
     xItemTitle = xItem.getTitle();
-    Logger.log("DUMPEV index|%s| id|%s| type|%s| title|%s|", xItemIndex,xItemId,xItemType,xItemTitle);
+    //Logger.log("DUMPEV index|%s| id|%s| type|%s| title|%s|", xItemIndex,xItemId,xItemType,xItemTitle);
   }
   var lItemNames = [];
-  for (q in oItemlist) lItemNames.push(q);
+  for ( var q in oItemlist ) lItemNames.push(q);
   oReturnMe.oItemlist = oItemlist;
   oReturnMe.lItemNames = lItemNames;
   Logger.log("EXIT  fnoDumpEvent return|%s|",oReturnMe);
@@ -711,7 +715,7 @@ function findItemResponseToKey(sKeyToFind,oItemdict) {
 //-------------------------------------------------
 function fnoDeepCopy(myoSomething) {
   var oNewthing = {};
-  for (var thing in myoSomething) {
+  for ( var thing in myoSomething ) {
     oNewthing[thing] = myoSomething[thing];
   }
   return oNewthing;
@@ -721,11 +725,12 @@ function fnoDeepCopy(myoSomething) {
 // f n o D u m p O b j e c t 
 //-------------------------------------------------
 function fnDumpObject(myoSomething,mysID) {
-  for (var thing in myoSomething) {
+  for ( var thing in myoSomething ) {
     var thingval = myoSomething[thing];
     Logger.log("fnDumpObject ID|%s| key|%s|=val|%s|",mysID,thing,thingval);
   }
 }
+
 
 
 //-------------------------------------------------
@@ -737,6 +742,64 @@ function dummyFunction() {
 // Grumble, grumble, Mr Google.  
 
 }
+
+//-------------------------------------------------
+// f n A c t u a l l y S e n d E m a i l 
+//-------------------------------------------------
+function fnActuallySendEmail(mysTarget, mysSubject, mysBody) {
+  Logger.log("ENTER fnActuallySendEmail to|%s| subj|%s| beginBODY||%s||BODYend", mysTarget, mysSubject, mysBody);
+  var result = MailApp.sendEmail(mysTarget, mysSubject, mysBody,{name:"HILR CC Course Submission Form"});
+  Logger.log("EXIT  fnActuallySendEmail to|%s| subj|%s| body||%s|| result|%s|", mysTarget, mysSubject, mysBody, result);
+}
+
+//-------------------------------------------------
+// f n T e s t E m a i l _ S m a l l 
+//-------------------------------------------------
+function fnTestEmail_Small() {
+var to = "test7s@ricksoft.com";
+var subj = "Test email from HILR form script - small";
+var body = "This is the smallest test message.";
+var result = fnActuallySendEmail(to,subj,body,{name:"fnTestEmail_Small"});
+}
+
+//-------------------------------------------------
+// f n T e s t E m a i l _ M e d i u m 
+//-------------------------------------------------
+function fnTestEmail_Medium() {
+var to = "test7m@ricksoft.com";
+var subj = "Test email from HILR form script - medium";
+var body = "This is the a less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+body += "This is the less small test message.\n";
+var result = fnActuallySendEmail(to,subj,body,{name:"fnTestEmail_Medium"});
+}
+
+
+
+
+
+
+
+
+
 
 
 
@@ -764,6 +827,9 @@ function dummyFunction() {
 
 /* 
         O L D   L E F T O V E R S 
+Someday I will study these enough to use them as a framework,
+ because they probably do some other useful things that I don't
+ know about.
 */
 
 
@@ -868,7 +934,7 @@ function getSettings() {
   var form = FormApp.getActiveForm();
   var textItems = form.getItems(FormApp.ItemType.TEXT);
   settings.textItems = [];
-  for (var i = 0; i < textItems.length; i++) {
+  for ( var i = 0; i < textItems.length; i++ ) {
     settings.textItems.push({
       title: textItems[i].getTitle(),
       id: textItems[i].getId()
@@ -891,7 +957,7 @@ function adjustFormSubmitTrigger() {
   // Create a new trigger if required; delete existing trigger
   //   if it is not needed.
   var existingTrigger = null;
-  for (var i = 0; i < triggers.length; i++) {
+  for ( var i = 0; i < triggers.length; i++ ) {
     if (triggers[i].getEventType() == ScriptApp.EventType.ON_FORM_SUBMIT) {
       existingTrigger = triggers[i];
       break;
