@@ -23,6 +23,10 @@
  *                  Change From name on email to HILR something or other.
  *                  Finally remove the old code.  
  *                  Test some slight reformatting of the message.  
+ * v09  20150929    Include the tail of the log file in the extrabody sent
+ *                   to me.
+ *                  Include partial course title as hint in the email 
+ *                   subject line.
  */
 
 // Yes, with no 'var' this is deliberately a global.  
@@ -111,11 +115,20 @@ function sendEmailAfterSubmit_RBL1(e) {
 
   // Special version of the body goes to the author; may include debug log.  
   // Optional because the log can be reeeaaallly looong, 1000s of lines.
+  // Take only a largish tail of the log file.
   var sExtraBody = "";
   if (bIncludeLog) 
   {
     //var sLogData = Logger.getLog().toString();
-    var sLogData = "\n=\n==\n===\n   Short stand-in stem for log data, just to see what happens.\n===\n==\n=\n";
+    if (0) {
+      var sLogData = "\n=\n==\n===\n   Short stand-in stem for log data, just to see what happens.\n===\n==\n=\n";
+    } else {
+      var sAllLogData = Logger.getLog().toString();
+      var lLogData = sAllLogData.split("\n");
+      var nLogLines = lLogData.length;
+      // Get the tail of the log.  Today, fifty lines.
+      var sLogData = lLogData.slice(nLogLines-50,nLogLines).join("\n");
+    }
     sExtraBody += '\n\n====== Debug log data follows.  Please ignore from here to end. ======\n\n';
     sExtraBody += sLogData;
     sExtraBody += "\n ====== END of log data ======\n";
@@ -168,10 +181,12 @@ function sendEmailAfterSubmit_RBL1(e) {
     // HILR production version
     var sSglName = findItemResponseToKey("SGL 1 Name",oMess);
     var sSglEMail = findItemResponseToKey("SGL 1 eMail",oMess);
-    var subject = "Submission from {0}; email={1}; at {2}".format( 
+    var sPartialTitle = findItemResponseToKey("Course Title",oMess).slice(0,24)+"...";
+    var subject = "Submission from {0}; title={3}; email={1}; at {2}".format( 
                    sSglName
                  , sSglEMail
                  , sTimestampBegin
+                 , sPartialTitle
                );
     Logger.log("EMAILSUBJECT |%s|",subject);
     // Get the email addresses of people who care.  
