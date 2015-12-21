@@ -31,8 +31,8 @@
 
 // Yes, with no 'var' this is deliberately a global.  
 // To be added to bottom of email.
-sVersionNumber = '08';
-sVersionDate = '20150817.1540'
+sVersionNumber = '09';
+sVersionDate = '20151220.0000'
 
 /**
  * @OnlyCurrentDoc
