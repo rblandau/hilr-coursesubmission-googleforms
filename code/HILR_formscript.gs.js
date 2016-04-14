@@ -5,8 +5,10 @@
  *                  Add a little debug info to old version, and update
  *                   the out-of-date version on the actual form.  
  * v05  20150814    RBLandau
- *                  New-ish version that almost works.  Still takes too much CPU time.  
- *                  Next: comment out all the old code that I think is no longer used 
+ *                  New-ish version that almost works.  Still takes too much 
+ *                   CPU time.  
+ *                  Next: comment out all the old code that I think is 
+ *                   no longer used 
  *                   and see if it still works.      
  * v06  20150815    Carefully log email construction and sending.  
  *                  In the future, we may have to worry about email length, which
@@ -15,7 +17,8 @@
  *                   in danger.  
  * v07  20150816    Remove most of the high-output logging to that it doesn't 
  *                   get truncated anymore.  
- *                  And don't include the log data at all; use a short stem value.  
+ *                  And don't include the log data at all; use a short 
+ *                   stem value.  
  *                  Add dummy routines to test sending email.  
  *                  And comment out a lot of old code.
  * v08  20150817    Use MailApp instead of GmailApp today, works.  
@@ -27,12 +30,17 @@
  *                   to me.
  *                  Include partial course title as hint in the email 
  *                   subject line.
+ * v10  20160414    Reduce emails sent from three to two, to avoid bumping
+ *                   into Google's daily limit, or at least run into it 
+ *                   more slowly.  
+ *                  Add EffectiveUser and timestamp into debug data
+ *                   "Contents" line. 
  */
 
 // Yes, with no 'var' this is deliberately a global.  
 // To be added to bottom of email.
-sVersionNumber = '09';
-sVersionDate = '20151220.0000'
+sVersionNumber = '10';
+sVersionDate = '20160414.1230'
 
 /**
  * @OnlyCurrentDoc
@@ -58,7 +66,7 @@ function sendEmailAfterSubmit_RBL1(e) {
 // Main entry point.  The Form Submit trigger should invoke this function.  
 
   //********************************************************************
-  // Yes, with no 'var', this is a global.  Intentional in case needed elsewhere.  
+  // Yes, with no 'var', this is a global.  Intentional in case it's needed elsewhere.  
 //  bProductionVersion = false;       // <=========== EDIT THIS !!!!!! ===============
   bProductionVersion = true ;       // <=========== EDIT THIS !!!!!! ===============
   bIncludeLog = true;               // include the debug log in output messages.
@@ -165,12 +173,12 @@ function sendEmailAfterSubmit_RBL1(e) {
     var email_user = Session.getActiveUser().getEmail();
     var email2 = "landau@ricksoft.com";
     var email3 = "theatrewonk@gmail.com";
-    var email4 = "receiver6_form@ricksoft.com";
+    var email4 = "receiver10_form@ricksoft.com";
     // For production, use only email2 and email3.  Comment out the others.  
     // Send an email with contents and a link to edit form with.
     //fnActuallySendEmail(email_user, subject, sFullBody);
     fnActuallySendEmail(email2, subject, sFullBody);
-    fnActuallySendEmail(email3, subject, sFullBody);
+    //fnActuallySendEmail(email3, subject, sFullBody);
     fnActuallySendEmail(email4, subject, sLongBody);
   } else
   {
@@ -193,12 +201,12 @@ function sendEmailAfterSubmit_RBL1(e) {
     var email_user = Session.getActiveUser().getEmail();
     var email2 = "hilr-cc-submissions@googlegroups.com";
     var email3 = "dickr@mac.com";
-    var email4 = "receiver8_form@ricksoft.com";
+    var email4 = "receiver10_form@ricksoft.com";
     // For production, use only email2 and email3.  Comment out the others.  
     //  Oh, and email4 is a debug copy to me, best left turned on.  
     // Send an email with contents and a link to edit form with.
     //fnActuallySendEmail(email_user, subject, sFullBody);
-    fnActuallySendEmail(email2, subject, sFullBody);    
+    //fnActuallySendEmail(email2, subject, sFullBody);    
     fnActuallySendEmail(email3, subject, sFullBody);
     fnActuallySendEmail(email4, subject, sLongBody);
   }
@@ -300,13 +308,14 @@ Returns a (dictionary) object containing
     }
   }
   
-    var email_user = Session.getActiveUser().getEmail();
+//    var email_user = Session.getActiveUser().getEmail();
+    var email_user = Session.getEffectiveUser().getEmail();
     var itemResponses = myoResponse.oItemResponses;
     var asMess = [];  // array of strings for the message, each a line
     var oItemlist = {};   // obj with properties obj[question]=answer.
     asMess.push('Contents of the most recent form submission, from ActiveUser = ' 
-             + email_user + '\n');
-    asMess.push('======'); 
+             + email_user);
+    asMess.push(' ====== '); 
     asMess.push( "submission at {0}:\n".format(myoResponse.sRespTimestamp) );
     var oReturnMe = fnoDeepCopy(myoResponse);
     oReturnMe.sResponse = "submitted at {0}:".format(myoResponse.sRespTimestamp);
@@ -366,11 +375,13 @@ function fnoDumpEvent(event1) {
   event1.oItemResponses = lItemResponses;
   Logger.log("DUMPEV event1=%s number of itemResponses=%s editURL=%s", event1,lItemResponses.length,tmpEditURL);
 
+  var dRespTimestamp = eResp.getTimestamp();
+  var sRespTimestamp = formatTimestamp_RBL1(dRespTimestamp);
+  event1.dRespTimestamp = dRespTimestamp;
+  event1.sRespTimestamp = sRespTimestamp;
   oReturnMe = formatFormResponse_RBL4(event1);
   oReturnMe.sEditURL = tmpEditURL;
   var oItemlist = {};
-  var dRespTimestamp = eResp.getTimestamp();
-  var sRespTimestamp = formatTimestamp_RBL1(dRespTimestamp);
   oItemlist[dRespTimestamp] = dRespTimestamp;
   oItemlist[sRespTimestamp] = sRespTimestamp;
   for (var sQuestion in eResp.oItems) 
