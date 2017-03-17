@@ -1,0 +1,13 @@
+Things to do in the HILR Form Submission Script
+edited 20170213
+
+
+TODO: code/HILR_formscript.gs.js
+FIXME - if a response contains quotation marks, escape them; may be
+    possible to use single quotes to contain the double quotes, but
+    will have to scan first.  
+FIXME - reduce or eliminate the debug info at the end of emails
+    sent to me.  
+
+
+
